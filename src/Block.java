@@ -1,17 +1,10 @@
 
 import java.util.Date;
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /**
  *
- * @author PID# 6224488
+ * @author Justin Gazsi
  */
-
 
 
 public class Block {
@@ -23,9 +16,14 @@ public class Block {
     public long timeStamp;
 
     //Block Constructor
-    public Block(String data, String previousHash) {
+    //public Block(String data, String previousHash) {
+    public Block(String data) {
         this.data = data;
-        this.previousHash = previousHash;
+        if (DataStorage.blockchain.size() == 0){
+            this.previousHash = "0";
+        } else {
+            this.previousHash = DataStorage.blockchain.get(DataStorage.blockchain.size() - 1).hash;
+        }
         this.timeStamp = new Date().getTime();
         this.hash = calculateHash();
     }
