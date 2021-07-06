@@ -1,38 +1,35 @@
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 /**
  *
- * @author PID# 6224488
+ * @author Justin Gazsi
  */
+
 public class DataStorage {
 
     //Global ArrayList (Blockchain)
-    public static ArrayList<Block> blockchain = new ArrayList<Block>();
+    //public static ArrayList<Block> blockchain = new ArrayList<Block>();
+    public static LinkedList<Block> blockchain = new LinkedList<Block>();
     static int NUM_BLOCKS = 10;
 
     //MAIN DRIVER
     public static void main(String[] args) {
         //Create Genesis Block
-        blockchain.add(new Block("Genesis Block", "0"));
+        //blockchain.add(new Block("Genesis Block", "0"));
+        blockchain.add(new Block("Genesis Block"));
 
         //add some more blocks
         for (int i = 2; i <= NUM_BLOCKS; i++) {
             String data = "Block# " + String.valueOf(i) + " - Tx's data stub";
-            //System.out.println(data);
-            
             //Uncomment to tamper with blockchain, insert invalid block
 //            if (i == 5){
 //                 blockchain.add(new Block(data, "Tampered here"));
 //            }
            
-            blockchain.add(new Block(data, blockchain.get(blockchain.size() - 1).hash));
-            
+            //blockchain.add(new Block(data, blockchain.get(blockchain.size() - 1).hash));
+            blockchain.add(new Block(data));
         }
 
         //Print Blockchain info
@@ -44,12 +41,38 @@ public class DataStorage {
             System.out.println("");
         }
         
-        System.out.println("Is blockchain valid: " + isChainValid());
+        System.out.println("Is blockchain valid: " + isChainValid() + "\n");
+        
+        Node node1 = new Node();
+        Node node2 = new Node();
+        System.out.println("NodeID: " + node1.nodeID + " Quorum Group: " + node1.quorumID);
+        System.out.println("NodeID: " + node2.nodeID + " Quorum Group: " + node2.quorumID);
+        System.out.println("");
+        
+        //mint new block to node1 blockchain and print
+        node1.blockchain.add(new Block("Test TX"));
+        for (Block block : node1.blockchain) {
+            System.out.println("TimeStamp: " + block.timeStamp);
+            System.out.println(block.data);
+            System.out.println("Prev Hash: " + block.previousHash);
+            System.out.println("Hash: " + block.hash);
+            System.out.println("");
+        }
+        
+        //Testing some output
+        Transaction tx = node1.createTransaction();
+        System.out.println("Node ID: " + tx.nodeID + "\n" + 
+                "TimeStamp: " + tx.timeStamp + "\n" + 
+                "TX ID: " + tx.TxID);
+
 
     }
 
-    // Function to check
-// validity of the blockchain
+    
+    
+    
+    
+    // Function to check validity of the blockchain
     public static Boolean isChainValid() {
         
         Block currentBlock;
