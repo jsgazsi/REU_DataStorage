@@ -1,6 +1,8 @@
 
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Random;
 
 /**
  *
@@ -8,98 +10,116 @@ import java.util.LinkedList;
  */
 public class DataStorage {
 
-    static int NUM_BLOCKS = 10;
-    static int NODE_CNT = 0;
+    static int NUM_NODES = 100;                                                 //Number of Nodes in Network
 
-    //Network list of attached nodes
-    public static ArrayList<Node> Nodes = new ArrayList<Node>();
-    public static ArrayList<Block> publicBlockchain = new ArrayList<Block>();
+    public static ArrayList<Node> Nodes = new ArrayList<Node>();                //Network of Nodes
+    public static Block GenBlock = new Block(new Transaction(-1), "0", 1);      //Genesis Block
+    public static Queue<Transaction> memPool = new LinkedList<Transaction>();   //MemPool of Transactions
+    //public static Quorum Quorum = new Quorum();                               //Class to generate Quorum
+    public static ArrayList<Node> QuorumGroup;                                  //Create List to Hold Quorum
 
     //MAIN DRIVER
     public static void main(String[] args) throws InterruptedException {
 
-        //Create Genesis Block
-        publicBlockchain.add(new Block("Genesis Block", "0"));
-        //publicBlockchain.add(new Block("Block 2", publicBlockchain.get(publicBlockchain.size() - 1).hash));
+        //Populate Network with Nodes
+        for (int i = 0; i < NUM_NODES; i++) {
+            Nodes.add(new Node());
+        }
 
-//        //add some more blocks
-//        for (int i = 2; i <= NUM_BLOCKS; i++) {
-//            String data = "Block# " + String.valueOf(i) + " - Tx's data stub";
-        //Uncomment to tamper with blockchain, insert invalid block
-//            if (i == 5){
-//                 blockchain.add(new Block(data, "Tampered here"));
-//            }
-//           
-//            //blockchain.add(new Block(data, blockchain.get(blockchain.size() - 1).hash));
-//            blockchain.add(new Block(data));
-//        }
-        Nodes.add(new Node());
-        Nodes.get(0).generateBlock();
-        Nodes.get(0).generateBlock();
-        Nodes.get(0).generateBlock();
+        //printBlockchainInfo(); //lets see what we have, OLD - prints blockchain of all Nodes.
+        
+        
+        //Test adding and viewing MemPool
+        System.out.println("MemPool INFO");
+        memPool.add(new Transaction(10));
+        memPool.add(new Transaction(12));
+        System.out.println(memPool);
+        System.out.println(memPool.peek().getData());
 
-        Nodes.add(new Node());
-        Thread.sleep(1000);
-        Nodes.get(1).generateBlock();
-        //Nodes.get(1).generateBlock();
+        //Test picking random Quorums
+        QuorumGroup = new Quorum().getRandomQuorum();
+        printQuorumMembers(QuorumGroup);
+        
+        QuorumGroup = new Quorum().getRandomQuorum();
+        printQuorumMembers(QuorumGroup);
+        
 
-        System.out.println(Nodes.get(0).getNodeID());
-        System.out.println(Nodes.get(1).getNodeID());
+
+        connectNetwork();   //Connect the network of nodes to peers
+        printNetworkConnections();
+
+    } //end main driver
+
+    
+    
+    //***** FUNCTIONS *****//
+    
+    //Function for printing blockchains of each network node
+    static void printBlockchainInfo() {
+        for (int i = 0; i < Nodes.size(); i++) {
+            System.out.println("NodeID: " + Nodes.get(i).getNodeID());// + " QID: " + Nodes.get(i).getQuorumID());
+            System.out.println("--------------------------------");
+            for (Block block : Nodes.get(i).getBlockchain()) {
+                System.out.println("Block#: " + block.getBlockNum());
+                System.out.println("TimeStamp: " + block.getTimeStamp());
+                System.out.println(block.getTransaction().getData());
+                System.out.println("Prev Hash: " + block.getPreviousHash());
+                System.out.println("Curr Hash: " + block.getHash());
+                System.out.println("");
+                //System.out.println(node1.blockchain.size());
+            }
+        }
+    }
+
+    static void printQuorumMembers(ArrayList<Node> QGroup) {
+        System.out.println("-----------------------");
+        System.out.println("Nodes in QuorumGroup");
+
+        for (Node node : QuorumGroup) {
+            System.out.print(node.getNodeID() + ", ");
+        }
+        System.out.println();
+    }
+
+    static void connectNetwork() {
+        Random rand = new Random();
+
+        for (Node node : Nodes) {
+            int count = rand.nextInt(9) + 2;  //Random connection to peers between 5-10
+            
+            //While # of peers is less than desired size, get a random peer
+            while (node.getPeers().size() < count) {
+                Node peer = Nodes.get(rand.nextInt(Nodes.size()));
+         
+                while (node.getPeers().contains(peer)) {  //Peer must not be in list already, or get new peer
+                    peer = Nodes.get(rand.nextInt(Nodes.size()));
+                }
+                if (node.getNodeID() != peer.getNodeID()) {     //Peer must not be equal to itself
+                    //Connect peers to eachother
+                    node.addPeer(peer);
+                    peer.addPeer(node);
+                }
+
+            }
+            //Uncomment below to see full history of peer connections as they are created
+            //printNetworkConnections();
+            
+        }
+
+    }
+    
+    //Function to print peer connections
+    static void printNetworkConnections() {
         System.out.println("");
-        //System.out.println(Nodes.size());
-        //Nodes.get(0).generateBlock();
-
-//        Node node1 = new Node();
-//        node1.generateBlock();
-//        node1.generateBlock();   
-//        
-//        Node node2 = new Node();
-//        node2.generateBlock();
-//        Node node3 = new Node();
-//        System.out.println("NodeID: " + node1.nodeID + " Quorum Group: " + node1.quorumID);
-//        System.out.println("NodeID: " + node2.nodeID + " Quorum Group: " + node2.quorumID);
-//        System.out.println("NodeID: " + node3.nodeID + " Quorum Group: " + node3.quorumID);
-//        System.out.println("");
-//        
-        //Verify blockchain
-        //System.out.println("Is blockchain valid: " + node1.isChainValid() + "\n");
-        //mint new block to node1 blockchain and print
-//      node1.blockchain.add(new Block("Test ADD TX"));
-
-        System.out.println("NodeID: " + Nodes.get(0).getNodeID());
-        for (Block block : Nodes.get(0).getBlockchain()) {
-            System.out.println("TimeStamp: " + block.timeStamp);
-            System.out.println("Data: " + block.data);
-            System.out.println("Prev Hash: " + block.previousHash);
-            System.out.println("Hash: " + block.hash);
-            System.out.println("");
-            //System.out.println(node1.blockchain.size());
-        }
-//        
-        System.out.println("NodeID: " + Nodes.get(1).getNodeID());
-        for (Block block : Nodes.get(1).getBlockchain()) {
-            System.out.println("TimeStamp: " + block.timeStamp);
-            System.out.println("Data: " + block.data);
-            System.out.println("Prev Hash: " + block.previousHash);
-            System.out.println("Hash: " + block.hash);
-            System.out.println("");
-        }
-
-        //Print Blockchain info
-        System.out.println("--------------------------------");
-//        for (Block block : DataStorage.blockchain) {
-//            System.out.println("TimeStamp: " + block.timeStamp);
-//            System.out.println(block.data);
-//            System.out.println("Prev Hash: " + block.previousHash);
-//            System.out.println("Hash: " + block.hash);
-//            System.out.println("");
-//        }
-
-        //Testing some output
-        Transaction tx = Nodes.get(0).createTransaction();
-        System.out.println("Node ID: " + tx.nodeID + "\n" + 
-                "TimeStamp: " + tx.timeStamp + "\n" + 
-                "TX ID: " + tx.TxID);
+        System.out.println("Peer Connection List");
+        System.out.println("--------------------");
+            for (Node n : Nodes) {
+                System.out.print("NodeID: " + n.getNodeID() + " - Peers: ");
+                for (int i = 0; i < n.getPeers().size(); i++) {
+                    System.out.print(n.getPeers().get(i).getNodeID() + " ");
+                }
+                System.out.println("");
+            }
     }
 
 }

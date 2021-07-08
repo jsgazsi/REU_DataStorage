@@ -1,14 +1,11 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
+import java.security.MessageDigest;
 
 /**
  *
- * @author PID# 6224488
+ * @author Justin Gazsi
  */
-import java.security.MessageDigest;
+
 
 public class crypt {
 

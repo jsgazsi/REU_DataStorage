@@ -11,18 +11,55 @@ import java.util.Date;
  *
  * @author PID# 6224488
  */
-public class Transaction extends Node {
+public class Transaction {
 
-    String TxID;
-    int nodeID;
-    String data;
-    long timeStamp;
+    private String TxID;
+    private int nodeID;
+    private String data;
+    private long timeStamp;
 
     //constructor
-    public Transaction() {
+    public Transaction(int nodeID) {
         this.TxID = createTxID();
         this.timeStamp = new Date().getTime();
-        this.nodeID = super.nodeID;
+        this.nodeID = nodeID;
+        this.data = ("TxDataStub - NodeID: ").concat(String.valueOf(nodeID)
+                .concat(" / TxID: ").concat(TxID).concat(" / Time: ").concat(String.valueOf(timeStamp)));
+    }
+
+//    public void printTx() {
+//        System.out.println(("TxDataStub - NodeID: ").concat(String.valueOf(nodeID).concat(" / TxID: ").concat(TxID)));
+//    }
+    public String getData() {
+        return data;
+    }
+
+    public void setData(String data) {
+        this.data = data;
+    }
+
+    public String getTxID() {
+        return TxID;
+    }
+
+    public void setTxID(String TxID) {
+        this.TxID = TxID;
+    }
+
+    public int getNodeID() {
+        return nodeID;
+    }
+
+    public void setNodeID(int nodeID) {
+        this.nodeID = nodeID;
+    }
+
+    public long getTimeStamp() {
+        return timeStamp;
+    }
+
+    public void setTimeStamp(long timeStamp) {
+        this.timeStamp = timeStamp;
     }
 
     public static String createTxID() {
@@ -30,7 +67,7 @@ public class Transaction extends Node {
         int rightLimit = 122; // letter 'z'
         int targetStringLength = 20;
         Random random = new Random();
-        
+
         //Create random string 20 char long for Tx ID
         String TxID = random.ints(leftLimit, rightLimit + 1)
                 .filter(i -> (i <= 57 || i >= 65) && (i <= 90 || i >= 97))
