@@ -18,7 +18,7 @@ public class Transaction {
     private String data;
     private long timeStamp;
 
-    //constructor
+    //Constructor
     public Transaction(int nodeID) {
         this.TxID = createTxID();
         this.timeStamp = new Date().getTime();

@@ -9,25 +9,24 @@ import java.util.Random;
 //Mimic behavior of a Node
 public class Node {
 
-    private ArrayList<Block> blockchain; //local copy of blockchain
+    //Class variables
     private int nodeID;
+    private ArrayList<Block> blockchain = new ArrayList<Block>();
+    ; //local copy of blockchain
     private ArrayList<Node> peers = new ArrayList<Node>();
-    //private int quorumID;
-    
+    private ArrayList<Transaction> memPool = new ArrayList<Transaction>();
+    //private int quorumID; //change to boolean if member of next quorum?
 
-    //Node Constructor
-    public Node() {
+    //Constructor
+    public Node() throws InterruptedException {
         //Create local copy of Blockchain and populate with public Genesis Block
-        blockchain = new ArrayList<Block>();
+        //blockchain = 
         this.blockchain.add(DataStorage.GenBlock);
-        
+
         //assign NodeID 
         this.nodeID = DataStorage.Nodes.size() + 1;
-        
-        //Network Connections of peers
-        
-        
 
+        //Network Connections of peers
         //while(True)
         //so often check that you have longest chain - update if not longest
         //listen for quroum call and if part of quorum
@@ -35,8 +34,56 @@ public class Node {
         //validate txs
         //generatate block
         //resume listengine
-    } //End constructor
+    }
 
+    // ***** FUNCTIONS *****//
+    public Transaction createTransaction() {
+        Transaction tx = new Transaction(this.nodeID);
+        return tx;
+    }
+
+    public void generateBlock() {
+        this.blockchain.add(new Block(new Transaction(this.nodeID),
+                this.blockchain.get(blockchain.size() - 1).getHash(),
+                this.blockchain.size() + 1));
+    }
+
+    //Function to broadcast transaction through network
+    public void broadcastTransaction(Transaction tx) {
+        //Add transaction to own MemPool
+        if (!this.memPool.contains(tx)) {
+            this.memPool.add(tx); 
+        }
+        //broadcast transaction to connected peers
+        for (Node peer : this.peers) {
+            if (!peer.getMemPool().contains(tx)) {
+                peer.getMemPool().add(tx);
+                peer.broadcastTransaction(tx); //peers recursively propogate through network
+            }
+        }
+
+    }
+
+    public ArrayList<Transaction> getMemPool() {
+        return memPool;
+    }
+
+    public void setMemPool(ArrayList<Transaction> memPool) {
+        this.memPool = memPool;
+    }
+
+    public void getLongestChain() {
+        //loop
+        //set an ID for longest chain
+        //Loop through Nodes list
+        //If Node.Blockhain > longest chain, then update ID for longest.
+        //End loop
+        //XXXX  Clear current blockchain and make deep copy of longest chain from ID
+        //
+
+    }
+
+    //***** Getters and Setters ****//
     public int getNodeID() {
         return nodeID;
     }
@@ -52,18 +99,10 @@ public class Node {
     public void setPeers(ArrayList<Node> peers) {
         this.peers = peers;
     }
-    
+
     public void addPeer(Node node) {
         this.peers.add(node);
     }
-
-//    public int getQuorumID() {
-//        return quorumID;
-//    }
-//
-//    public void setQuorumID(int quorumID) {
-//        this.quorumID = quorumID;
-//    }
 
     public ArrayList<Block> getBlockchain() {
         return blockchain;
@@ -73,35 +112,13 @@ public class Node {
         this.blockchain = blockchain;
     }
 
-    public Transaction createTransaction() {
-        Transaction tx = new Transaction(this.nodeID);
-        return tx;
-    }
-
-    public void generateBlock() {
-        this.blockchain.add(new Block(new Transaction(this.nodeID), 
-                this.blockchain.get(blockchain.size() - 1).getHash(),
-                this.blockchain.size() + 1));
-    }
-
-    //function to broadcast transaction
-    public int broadcastTransaction(Transaction tx) {
-        int qGroup = new Random().nextInt(3) + 1;
-        //create while loop to keep generating until qGroup != nodes quorum id.
-        return qGroup;
-    }
-
-    public void getLongestChain() {
-        //loop
-        //set an ID for longest chain
-        //Loop through Nodes list
-        //If Node.Blockhain > longest chain, then update ID for longest.
-        //End loop
-        //XXXX  Clear current blockchain and make deep copy of longest chain from ID
-        //
-
-    }
-
+//    public int getQuorumID() {
+//        return quorumID;
+//    }
+//
+//    public void setQuorumID(int quorumID) {
+//        this.quorumID = quorumID;
+//    }
     // Function to check validity of the blockchain
 //    public static Boolean isChainValid() {
 //        
