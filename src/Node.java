@@ -42,6 +42,29 @@ public class Node {
         return tx;
     }
 
+    public void validateBlock() {
+
+        boolean nodeVote = true;
+        //Check if node is in Quorum
+        if (DataStorage.Quorum.getQuroumGroup().contains(this)) {
+            System.out.print("I am node: " + this.nodeID + " \tI am in the quorum - ");
+            for (Transaction tx : this.memPool) {
+                boolean txIsFound = false;
+                for (int j = 0; j < DataStorage.Nodes.size(); j++) {
+                    if (tx.getNodeID() == DataStorage.Nodes.get(j).getNodeID()) {
+                        txIsFound = true;
+                    }
+
+                }
+                if (!txIsFound) {
+                    nodeVote = false; //Bad transaction found! Do not vote for the block
+                }
+            }
+            System.out.println("I voted: " + nodeVote);
+        }
+
+    }
+
     public void generateBlock() {
         this.blockchain.add(new Block(new Transaction(this.nodeID),
                 this.blockchain.get(blockchain.size() - 1).getHash(),
@@ -50,9 +73,9 @@ public class Node {
 
     //Function to broadcast transaction through network
     public void broadcastTransaction(Transaction tx) {
-        //Add transaction to own MemPool
+
         if (!this.memPool.contains(tx)) {
-            this.memPool.add(tx); 
+            this.memPool.add(tx);
         }
         //broadcast transaction to connected peers
         for (Node peer : this.peers) {
