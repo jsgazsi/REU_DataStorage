@@ -42,13 +42,7 @@ public class Quorum {
         //return quorum;
     }
     
-    public void createBlock() {
-        
-    }
     
-    public void validateBlock() {
-        
-    }
 
     
         //This function returns an ArrayList of Quorum members from the Network Node list

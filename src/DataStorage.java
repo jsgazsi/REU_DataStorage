@@ -11,17 +11,21 @@ import java.util.Random;
  * @author Justin Gazsi
  */
 public class DataStorage {
+    static ArrayList<Transaction> GenBlockTXs = new ArrayList<Transaction>();
+    
 
     static int NUM_NODES = 20;                                              //Number of Nodes in Network
     public static ArrayList<Node> Nodes = new ArrayList<Node>();            //Network of Nodes
-    public static Block GenBlock = new Block(new Transaction(-1), "0", 1);  //Genesis Block
+    public static Block GenBlock;// = new Block(new Transaction(-1), "0", 1);  //Genesis Block
     public static Quorum Quorum; //= new Quorum();                             //Class to generate Quorum
     //public static ArrayList<Node> QuorumGroup;                              //Create List to Hold Quorum
     public static Boolean isVisited[];
 
     //MAIN DRIVER
     public static void main(String[] args) throws InterruptedException, IOException {
-
+        GenBlockTXs.add(new Transaction(-1));
+        GenBlock = new Block(GenBlockTXs, "0", 1);
+        
         //Populate Network with Nodes
         for (int i = 0; i < NUM_NODES; i++) {
             Nodes.add(new Node());
@@ -45,7 +49,9 @@ public class DataStorage {
 
         //Connect network and print report
         connectNetwork();
-        printNetworkConnections();
+        //printNetworkConnections();
+        
+        
         //Generate some transactions and broadcast to the mempools
         Nodes.get(0).broadcastTransaction(Nodes.get(0).createTransaction());
         for (int i = 0; i < 2; i++) {
@@ -54,14 +60,28 @@ public class DataStorage {
         }
         
         
-        //Nodes.get(8).getMemPool().add(new Transaction(89)); //test voting with bad transaction
-        printMemPool();
+        Nodes.get(8).getMemPool().add(new Transaction(89)); //test voting with bad transaction
+        //printMemPool();
         
         
         
         for (Node node: Nodes) {
             node.validateBlock();
         }
+        
+
+        
+        //Generate valid Block
+        Quorum.getQuroumGroup().get(0).generateBlock();
+
+        printNodeBlockchain(Quorum.getQuroumGroup().get(0));
+        
+        printNodeBlockchain(Quorum.getQuroumGroup().get(1));
+        
+        
+        printMemPool();
+        printBlockchainInfo();
+       
     } //end main driver
 
 
@@ -69,13 +89,15 @@ public class DataStorage {
     //***** FUNCTIONS *****//
     //Function for printing blockchains of each network node
     static void printBlockchainInfo() {
+        System.out.println();
+        System.out.println("Blockchain INFO");
         for (int i = 0; i < Nodes.size(); i++) {
             System.out.println("NodeID: " + Nodes.get(i).getNodeID());// + " QID: " + Nodes.get(i).getQuorumID());
             System.out.println("--------------------------------");
             for (Block block : Nodes.get(i).getBlockchain()) {
                 System.out.println("Block#: " + block.getBlockNum());
                 System.out.println("TimeStamp: " + block.getTimeStamp());
-                System.out.println(block.getTransaction().getData());
+                System.out.println(block.getTxList());
                 System.out.println("Prev Hash: " + block.getPreviousHash());
                 System.out.println("Curr Hash: " + block.getHash());
                 System.out.println("");
@@ -86,12 +108,13 @@ public class DataStorage {
 
     static void printNodeBlockchain(Node node) {
         System.out.println();
-        System.out.println("NodeID: " + node.getNodeID());
+        System.out.println("NodeID: " + node.getNodeID() + " - Blockchain Info");
         System.out.println("--------------------------------");
         for (Block block : node.getBlockchain()) {
             System.out.println("Block#: " + block.getBlockNum());
             System.out.println("TimeStamp: " + block.getTimeStamp());
-            System.out.println(block.getTransaction().getData());
+            //System.out.println(block.getTransaction().getData());
+            System.out.println(block.getTxList());
             System.out.println("Prev Hash: " + block.getPreviousHash());
             System.out.println("Curr Hash: " + block.getHash());
             System.out.println("");

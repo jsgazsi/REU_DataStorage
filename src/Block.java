@@ -1,4 +1,5 @@
 
+import java.util.ArrayList;
 import java.util.Date;
 
 /**
@@ -12,17 +13,21 @@ public class Block {
     private String previousHash;
     private String data; //Tx data stub <- Turn into a Transaction object List
     private Transaction transaction;
+    private ArrayList<Transaction> txList = new ArrayList<Transaction>();
     private long timeStamp;
     private int blockNum;
 
     //Block Constructor
-    public Block(Transaction tx, String prevHash, int blockNum) {
-        this.transaction = tx;
+    public Block(ArrayList<Transaction> TXs, String prevHash, int blockNum) {
+        //this.transaction = tx;
+        for (Transaction tx: TXs) {
+            this.txList.add(tx);
+        }
         this.timeStamp = new Date().getTime();
 
-        if (tx.getNodeID() == -1) {
+        if (TXs.get(0).getNodeID() == -1) {
             this.previousHash = "0";
-            tx.setData("GENESIS BLOCK");// = "Genesis Block";
+            //tx.setData("GENESIS BLOCK");// = "Genesis Block";
         } else {
             //this.previousHash = DataStorage.publicBlockchain.(size() - 1).hash;
             this.previousHash = prevHash;
@@ -33,6 +38,12 @@ public class Block {
     }
 
     //Getters and Setters
+
+    public ArrayList<Transaction> getTxList() {
+        return txList;
+    }
+    
+    
     public int getBlockNum() {
         return blockNum;
     }
