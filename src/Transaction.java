@@ -27,9 +27,7 @@ public class Transaction {
                 .concat(" / TxID: ").concat(TxID).concat(" / Time: ").concat(String.valueOf(timeStamp)));
     }
 
-//    public void printTx() {
-//        System.out.println(("TxDataStub - NodeID: ").concat(String.valueOf(nodeID).concat(" / TxID: ").concat(TxID)));
-//    }
+
     public String getData() {
         return data;
     }

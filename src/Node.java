@@ -12,31 +12,21 @@ public class Node {
     //Class variables
     private int nodeID;
     private ArrayList<Block> blockchain = new ArrayList<Block>();
-    ; //local copy of blockchain
     private ArrayList<Node> peers = new ArrayList<Node>();
     private ArrayList<Transaction> memPool = new ArrayList<Transaction>();
-    //private int quorumID; //change to boolean if member of next quorum?
 
     //Constructor
     public Node() throws InterruptedException {
-        //Create local copy of Blockchain and populate with public Genesis Block
-        //blockchain = 
+        //Inizalize local Blockchain ledger Genesis Block
         this.blockchain.add(DataStorage.GenBlock);
 
         //assign NodeID 
         this.nodeID = DataStorage.Nodes.size() + 1;
 
-        //Network Connections of peers
-        //while(True)
-        //so often check that you have longest chain - update if not longest
-        //listen for quroum call and if part of quorum
-        //do something - contact other quorum members.
-        //validate txs
-        //generatate block
-        //resume listengine
     }
 
     // ***** FUNCTIONS *****//
+    
     public Transaction createTransaction() {
         Transaction tx = new Transaction(this.nodeID);
         return tx;
@@ -61,14 +51,44 @@ public class Node {
                 }
             }
             System.out.println("I voted: " + nodeVote);
+            DataStorage.Quorum.getVotes().remove(0);
+            DataStorage.Quorum.getVotes().add(nodeVote);
+
         }
 
     }
 
-    public void generateBlock() {
-        this.blockchain.add(new Block(new Transaction(this.nodeID),
-                this.blockchain.get(blockchain.size() - 1).getHash(),
-                this.blockchain.size() + 1));
+    public void proposeBlock() {
+
+        if (DataStorage.Quorum.getVotes().contains(false)) {
+            System.out.println("Block validation failed - Attempting to remove Bad TXs and rebroadcast for validaton\n");
+
+            //search through mempool and check for invalid transactions (i.e. nodes not members of the network - invalid nodeID)
+            for (int i = 0; i < this.memPool.size(); i++) {
+                if ((this.memPool.get(i).getNodeID() > DataStorage.Nodes.size()) || (this.memPool.get(i).getNodeID() < 1)) {
+                    //bad transaction found, Call on quorum to remove bad transaction and revalidate new block
+                    for (Node node : DataStorage.Quorum.getQuroumGroup()) {
+                        node.getMemPool().remove(i);
+                        node.validateBlock();
+
+                    }
+                    this.proposeBlock();
+                }
+            }
+        } else {  //Block is good, add Block to local ledger, clear MemPool
+            this.blockchain.add(new Block(this.memPool, this.blockchain.get(this.blockchain.size() - 1)
+                    .getHash(), this.blockchain.size() + 1, DataStorage.Quorum.getVotes()));
+
+            System.out.println("Successfully added Block!\n");
+
+            this.memPool.clear();
+
+            //Broadcast block to network (node now has longest chain) Nodes check if block in longest chain has valid Quorum Signature
+            for (Node node : DataStorage.Nodes) {
+                node.getLongestChain();
+            }
+        }
+
     }
 
     //Function to broadcast transaction through network
@@ -87,6 +107,37 @@ public class Node {
 
     }
 
+    public void getLongestChain() {
+        int maxID = this.nodeID;
+        for (Node node : DataStorage.Nodes) {  //Find node with longest blockchain
+            if (node.getBlockchain().size() > this.blockchain.size()) {
+                maxID = node.getNodeID();
+            }
+        }
+
+        if (maxID != this.nodeID) { //Make sure longest chain is not self
+            //check that quorum voted true
+            if(!DataStorage.Nodes.get(maxID - 1)
+                    .getBlockchain().get(DataStorage.Nodes.get(maxID - 1)
+                    .getBlockchain().size() - 1).getQVotes()
+                     .contains(false)) 
+            {
+                //Quorum Signature succesfully validated, clear mempool and add latest block to local ledger
+                this.blockchain.add(DataStorage.Nodes.get(maxID - 1)
+                    .getBlockchain().get(DataStorage.Nodes.get(maxID - 1).getBlockchain().size() - 1));
+                
+                //*note* in reality we want to remove only mempool transactions that are already in the blockchain
+                //for scalability experiment, mempools will always match, so just clear mempool.
+                this.memPool.clear();
+            }
+            
+            
+
+        }
+
+    }
+
+    //***** Getters and Setters ****//
     public ArrayList<Transaction> getMemPool() {
         return memPool;
     }
@@ -95,18 +146,6 @@ public class Node {
         this.memPool = memPool;
     }
 
-    public void getLongestChain() {
-        //loop
-        //set an ID for longest chain
-        //Loop through Nodes list
-        //If Node.Blockhain > longest chain, then update ID for longest.
-        //End loop
-        //XXXX  Clear current blockchain and make deep copy of longest chain from ID
-        //
-
-    }
-
-    //***** Getters and Setters ****//
     public int getNodeID() {
         return nodeID;
     }

@@ -42,16 +42,10 @@ public class Quorum {
         //return quorum;
     }
     
-    public void createBlock() {
-        
-    }
     
-    public void validateBlock() {
-        
-    }
 
     
-        //This function returns an ArrayList of Quorum members from the Network Node list
+    //This function returns an ArrayList of Quorum members from the Network Node list
     public void getHashQuorum(String hash) {
         
         ArrayList<Node> quorum = new ArrayList<>();

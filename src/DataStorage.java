@@ -12,70 +12,86 @@ import java.util.Random;
  */
 public class DataStorage {
 
+    static ArrayList<Transaction> GenBlockTXs = new ArrayList<Transaction>();
+
     static int NUM_NODES = 20;                                              //Number of Nodes in Network
     public static ArrayList<Node> Nodes = new ArrayList<Node>();            //Network of Nodes
-    public static Block GenBlock = new Block(new Transaction(-1), "0", 1);  //Genesis Block
+    public static Block GenBlock;// = new Block(new Transaction(-1), "0", 1);  //Genesis Block
     public static Quorum Quorum; //= new Quorum();                             //Class to generate Quorum
     //public static ArrayList<Node> QuorumGroup;                              //Create List to Hold Quorum
-    public static Boolean isVisited[];
+    public static ArrayList<Boolean> GenQuorum = new ArrayList<Boolean>();
 
     //MAIN DRIVER
     public static void main(String[] args) throws InterruptedException, IOException {
+        GenBlockTXs.add(new Transaction(-1));
+        GenBlock = new Block(GenBlockTXs, "0", 1, GenQuorum);
 
         //Populate Network with Nodes
         for (int i = 0; i < NUM_NODES; i++) {
             Nodes.add(new Node());
         }
-        
+
         //***** EXPERIMENT FUNCTIONS *****//
         //quorumDistributionExp();
         //randomDistributionExp();
 
-//        //Test picking random Quorums
-//        Quorum = new Quorum();
-//        printQuorumInfo();
-// 
+        //Generate Quorum and Print info
         Quorum = new Quorum();
         printQuorumInfo();
-//
-//        //Test creating valid blockchain
-//        for (int i = 0; i < 5; i++) Nodes.get(0).generateBlock();
-//        printNodeBlockchain(Nodes.get(0));
 
+        
+        //Bad block proposal and transaction tests
+            //Test creating proposing multiple invalid blocks
+            //for (int i = 0; i < 5; i++) Nodes.get(0).proposeBlock();
 
+            //test voting with bad transaction - NodeID not in the network
+            //Nodes.get(0).broadcastTransaction(new Transaction(89));
+
+        
+        
         //Connect network and print report
         connectNetwork();
         printNetworkConnections();
-        //Generate some transactions and broadcast to the mempools
-        Nodes.get(0).broadcastTransaction(Nodes.get(0).createTransaction());
-        for (int i = 0; i < 2; i++) {
+
+        //Test Generate 3 Blocks with 3 transactions each, Quorum Validates Blocks
+        for (int i = 0; i < 3; i++) {
+            Quorum = new Quorum();
+            //Nodes.get(0).broadcastTransaction(new Transaction(89)); //bad transaction test
+            //Generate some transactions and broadcast to the mempools
+            for (int j = 0; j < 3; j++) {
             Thread.sleep(1); //To not overlap timestamps
-            Nodes.get(i).broadcastTransaction(Nodes.get(i).createTransaction());
+            //Nodes.get(0).broadcastTransaction(new Transaction(89)); //bad transaction test
+            Nodes.get(j).broadcastTransaction(Nodes.get(j).createTransaction());
+            }
+            
+            //Nodes in Network will check if they are in Quorum and validate block
+            for (Node node : Nodes) {
+                node.validateBlock();
+            }
+            
+            //Oldest Quorum member proposes a block. Validation follows in function
+            Quorum.getQuroumGroup().get(0).proposeBlock();
+            
         }
         
-        
-        //Nodes.get(8).getMemPool().add(new Transaction(89)); //test voting with bad transaction
         printMemPool();
-        
-        
-        
-        for (Node node: Nodes) {
-            node.validateBlock();
-        }
+        printBlockchainInfo(); //for all nodes, use for testing with small # of nodes
+
     } //end main driver
-
-
 
     //***** FUNCTIONS *****//
     //Function for printing blockchains of each network node
     static void printBlockchainInfo() {
+        System.out.println();
+        System.out.println("Blockchain INFO");
         for (int i = 0; i < Nodes.size(); i++) {
             System.out.println("NodeID: " + Nodes.get(i).getNodeID());// + " QID: " + Nodes.get(i).getQuorumID());
             System.out.println("--------------------------------");
             for (Block block : Nodes.get(i).getBlockchain()) {
                 System.out.println("Block#: " + block.getBlockNum());
                 System.out.println("TimeStamp: " + block.getTimeStamp());
-                System.out.println(block.getTransaction().getData());
+                System.out.println(block.getTxList());
+                System.out.println(block.getQVotes());
                 System.out.println("Prev Hash: " + block.getPreviousHash());
                 System.out.println("Curr Hash: " + block.getHash());
                 System.out.println("");
@@ -86,12 +102,14 @@ public class DataStorage {
 
     static void printNodeBlockchain(Node node) {
         System.out.println();
-        System.out.println("NodeID: " + node.getNodeID());
+        System.out.println("NodeID: " + node.getNodeID() + " - Blockchain Info");
         System.out.println("--------------------------------");
         for (Block block : node.getBlockchain()) {
             System.out.println("Block#: " + block.getBlockNum());
             System.out.println("TimeStamp: " + block.getTimeStamp());
-            System.out.println(block.getTransaction().getData());
+            //System.out.println(block.getTransaction().getData());
+            System.out.println(block.getTxList());
+            System.out.println(block.getQVotes());
             System.out.println("Prev Hash: " + block.getPreviousHash());
             System.out.println("Curr Hash: " + block.getHash());
             System.out.println("");
@@ -109,28 +127,15 @@ public class DataStorage {
         }
         System.out.println();
 
-//        for (Node node : Quorum.getQuroumGroup()) {
-//            System.out.print(node.getNodeID() + ", ");
-//            //System.out.println("Vote: " + Quorum.getVotes().get(NUM_NODES));
-//        }
-//        System.out.println();
-    }
-
-    static void printQuorumVotes() {
-        System.out.println("Quorum Votes");
-        for (Boolean vote : Quorum.getVotes()) {
-            System.out.println(vote);
-
-        }
     }
 
     static void connectNetwork() {
         Random rand = new Random();
 
         for (Node node : Nodes) {
-            int count = rand.nextInt(7) + 3;  //Random connection to peers between 3-10
+            int count = rand.nextInt(7) + 3;  //Random connection to peers
 
-            //While # of peers is less than desired size, get a random peer
+            //While # of peers is less than desired size, get a random peer to connect to
             while (node.getPeers().size() < count) {
                 Node peer = Nodes.get(rand.nextInt(Nodes.size()));
 
@@ -138,17 +143,13 @@ public class DataStorage {
                 while (node.getPeers().contains(peer) || (node.getNodeID() == peer.getNodeID())) {
                     peer = Nodes.get(rand.nextInt(Nodes.size()));
                 }
-
-                //Connect peers
+                //Connect to listen to peers
                 node.addPeer(peer);
-                //peer.addPeer(node);
-
+                //peer.addPeer(node);  //for two-way connection
             }
             //Uncomment below to see full history of peer connections as they are created
             //printNetworkConnections();
-
         }
-
     }
 
     //Function to print peer connections
@@ -175,8 +176,9 @@ public class DataStorage {
             for (int i = 0; i < n.getPeers().size(); i++) {
                 System.out.print(n.getPeers().get(i).getNodeID() + " ");
             }
-            System.out.println("");
+            System.out.println();
         }
+        System.out.println();
     }
 
     static void printMemPool() {
@@ -189,10 +191,39 @@ public class DataStorage {
             }
         }
     }
+
+    //***** EXPERIMENTS *****//
+    static void scalability(int numNodes, int tps) throws InterruptedException{
+        //Create Nodes
+        for (int i = 0; i < numNodes; i++) {
+            Nodes.add(new Node());
+        }
+        connectNetwork();
+        
+        //Begin LOOP - TODO Determine Loop Parameters
+            //TIME - Begin
+            Quorum = new Quorum();
+            //TIME - Quorum Creation (this - begin)
+            //TODO: Inner Loop: 
+                //broadcast #tps for #seconds
+            //End Inner Loop
+            //TIME: TX creation and propogation (this - quorum creation)
+            //Nodes in Network will check if they are in Quorum and validate block
+            for (Node node : Nodes) {
+                node.validateBlock();
+            }
+            //TIME: Quorum Validation (this - Tx propogation/creation)
+            //Node proposes Block (and propogates through network, nodes validate and add Block)
+            Quorum.getQuroumGroup().get(0).proposeBlock();
+            // TIME - (Block Validation and Propogation)(Total = this - begin) 
+            
+        //End Loop
+    }
     
-        //***** EXPERIMENTS *****//
+    
+    
     //Experiment to test quorum distribution using last block hash as seed (compare to java random)
-    static void quorumDistributionExp() throws InterruptedException, IOException {
+    static void hashDistributionExp() throws InterruptedException, IOException {
         File file = new File("QuorumCounts.csv");
         if (!file.exists()) {
             file.createNewFile();
@@ -206,8 +237,8 @@ public class DataStorage {
 
             for (int i = 0; i < 1000; i++) { //Number Quorum Generations - log how many times node was selected 
                 //Thread.sleep(1); //Add a millisecond to change timestamp for increase hash randomness
-                //Generate Block and Get Quorum based on Block Hash
-                Nodes.get(0).generateBlock();
+                //Generate Block and to Get Quorum based on Block Hash
+                Nodes.get(0).proposeBlock();
                 Quorum.getHashQuorum(Nodes.get(0).getBlockchain().get(Nodes.get(0).getBlockchain().size() - 1).getHash());
 
                 //Log the nodes that were selected for the quorum
@@ -227,7 +258,7 @@ public class DataStorage {
         }
         pw.close();
     }
-    
+
     //Experiment to test quorum distribution of java.util random (compare to block hash generation)
     static void randomDistributionExp() throws InterruptedException, IOException {
         File file = new File("RandomCounts.csv");
@@ -236,10 +267,9 @@ public class DataStorage {
         }
 
         PrintWriter pw = new PrintWriter(new FileOutputStream(new File("RandomCounts.csv"), true));
-        
+
         int[] randomCounts = new int[50];
         Quorum = new Quorum();
-  
 
         for (int x = 0; x < 1000; x++) {  //Number of Trials
 
@@ -266,5 +296,7 @@ public class DataStorage {
         }
         pw.close();
     }
+    
+    
 
 }
