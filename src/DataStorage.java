@@ -14,7 +14,7 @@ public class DataStorage {
 
     static ArrayList<Transaction> GenBlockTXs = new ArrayList<Transaction>();
 
-    static int NUM_NODES = 20;                                              //Number of Nodes in Network
+    static int NUM_NODES = 30;                                              //Number of Nodes in Network
     public static ArrayList<Node> Nodes = new ArrayList<Node>();            //Network of Nodes
     public static Block GenBlock;// = new Block(new Transaction(-1), "0", 1);  //Genesis Block
     public static Quorum Quorum; //= new Quorum();                             //Class to generate Quorum
@@ -36,8 +36,8 @@ public class DataStorage {
         //randomDistributionExp();
 
         //Generate Quorum and Print info
-        Quorum = new Quorum();
-        printQuorumInfo();
+        //Quorum = new Quorum();
+        //printQuorumInfo();
 
         
         //Bad block proposal and transaction tests
@@ -55,14 +55,20 @@ public class DataStorage {
 
         //Test Generate 3 Blocks with 3 transactions each, Quorum Validates Blocks
         for (int i = 0; i < 3; i++) {
+            
             Quorum = new Quorum();
-            //Nodes.get(0).broadcastTransaction(new Transaction(89)); //bad transaction test
+            printQuorumInfo();
+            
+            //bad transaction test
+            Nodes.get(0).broadcastTransaction(new Transaction(89)); 
+            
             //Generate some transactions and broadcast to the mempools
             for (int j = 0; j < 3; j++) {
-            Thread.sleep(1); //To not overlap timestamps
-            //Nodes.get(0).broadcastTransaction(new Transaction(89)); //bad transaction test
+            //Thread.sleep(1); //To not overlap timestamps
+            Nodes.get(0).broadcastTransaction(new Transaction(89)); //bad transaction test
             Nodes.get(j).broadcastTransaction(Nodes.get(j).createTransaction());
             }
+            
             
             //Nodes in Network will check if they are in Quorum and validate block
             for (Node node : Nodes) {
@@ -72,10 +78,15 @@ public class DataStorage {
             //Oldest Quorum member proposes a block. Validation follows in function
             Quorum.getQuroumGroup().get(0).proposeBlock();
             
+   
         }
         
+        printNodeBlockchain(Nodes.get(0));
         printMemPool();
-        printBlockchainInfo(); //for all nodes, use for testing with small # of nodes
+        
+        //*** DO NOT USE WITH LARGE # of NODES
+        //printMemPool();
+        //printBlockchainInfo(); //for all nodes, use for testing with small # of nodes
 
     } //end main driver
 
@@ -133,7 +144,7 @@ public class DataStorage {
         Random rand = new Random();
 
         for (Node node : Nodes) {
-            int count = rand.nextInt(7) + 3;  //Random connection to peers
+            int count = rand.nextInt(10) + 5;  //Random connection to peers
 
             //While # of peers is less than desired size, get a random peer to connect to
             while (node.getPeers().size() < count) {
