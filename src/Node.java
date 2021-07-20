@@ -37,7 +37,7 @@ public class Node {
         boolean nodeVote = true;
         //Check if node is in Quorum
         if (DataStorage.Quorum.getQuroumGroup().contains(this)) {
-            System.out.print("I am node: " + this.nodeID + " \tI am in the quorum - ");
+            //System.out.print("I am node: " + this.nodeID + " \tI am in the quorum - ");
             for (Transaction tx : this.memPool) {
                 boolean txIsFound = false;
                 for (int j = 0; j < DataStorage.Nodes.size(); j++) {
@@ -50,7 +50,7 @@ public class Node {
                     nodeVote = false; //Bad transaction found! Do not vote for the block
                 }
             }
-            System.out.println("I voted: " + nodeVote);
+            //System.out.println("I voted: " + nodeVote);
             DataStorage.Quorum.getVotes().remove(0);
             DataStorage.Quorum.getVotes().add(nodeVote);
 
@@ -79,7 +79,7 @@ public class Node {
             this.blockchain.add(new Block(this.memPool, this.blockchain.get(this.blockchain.size() - 1)
                     .getHash(), this.blockchain.size() + 1, DataStorage.Quorum.getVotes()));
 
-            System.out.println("Successfully added Block!\n");
+            //System.out.println("Successfully added Block!\n");
 
             this.memPool.clear();
 

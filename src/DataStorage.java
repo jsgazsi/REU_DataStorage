@@ -14,7 +14,7 @@ public class DataStorage {
 
     static ArrayList<Transaction> GenBlockTXs = new ArrayList<Transaction>();
 
-    static int NUM_NODES = 20;                                              //Number of Nodes in Network
+    static int NUM_NODES = 30;                                              //Number of Nodes in Network
     public static ArrayList<Node> Nodes = new ArrayList<Node>();            //Network of Nodes
     public static Block GenBlock;// = new Block(new Transaction(-1), "0", 1);  //Genesis Block
     public static Quorum Quorum; //= new Quorum();                             //Class to generate Quorum
@@ -26,58 +26,141 @@ public class DataStorage {
         GenBlockTXs.add(new Transaction(-1));
         GenBlock = new Block(GenBlockTXs, "0", 1, GenQuorum);
 
-        //Populate Network with Nodes
-        for (int i = 0; i < NUM_NODES; i++) {
-            Nodes.add(new Node());
-        }
-
+//        //Populate Network with Nodes
+//        for (int i = 0; i < NUM_NODES; i++) {
+//            Nodes.add(new Node());
+//        }
         //***** EXPERIMENT FUNCTIONS *****//
         //quorumDistributionExp();
         //randomDistributionExp();
+        
+//        for (int i = 1000; i <= 5000; i+=1000) {
+//            for (int j = 10; j <= 50; j+=10) {
+//                scalability(i, j);
+//                Thread.sleep(5000);
+//            }
+//        }
+        scalability(5000, 10);
 
         //Generate Quorum and Print info
-        Quorum = new Quorum();
-        printQuorumInfo();
-
-        
+        //Quorum = new Quorum();
+        //printQuorumInfo();
         //Bad block proposal and transaction tests
-            //Test creating proposing multiple invalid blocks
-            //for (int i = 0; i < 5; i++) Nodes.get(0).proposeBlock();
-
-            //test voting with bad transaction - NodeID not in the network
-            //Nodes.get(0).broadcastTransaction(new Transaction(89));
-
-        
-        
+        //Test creating proposing multiple invalid blocks
+        //for (int i = 0; i < 5; i++) Nodes.get(0).proposeBlock();
+        //test voting with bad transaction - NodeID not in the network
+        //Nodes.get(0).broadcastTransaction(new Transaction(89));
         //Connect network and print report
+//        connectNetwork();
+//        printNetworkConnections();
+        //Test Generate 3 Blocks with 3 transactions each, Quorum Validates Blocks
+//        for (int i = 0; i < 3; i++) {
+//            
+//            Quorum = new Quorum();
+//            printQuorumInfo();
+//            
+//            //bad transaction test
+//            //Nodes.get(0).broadcastTransaction(new Transaction(89)); 
+//            
+//            //Generate some transactions and broadcast to the mempools
+//            for (int j = 0; j < 3; j++) {
+//            //Thread.sleep(1); //To not overlap timestamps
+//            //Nodes.get(0).broadcastTransaction(new Transaction(89)); //bad transaction test
+//            Nodes.get(j).broadcastTransaction(Nodes.get(j).createTransaction());
+//            }
+//            
+//            
+//            //Nodes in Network will check if they are in Quorum and validate block
+//            for (Node node : Nodes) {
+//                node.validateBlock();
+//            }
+//            
+//            //Oldest Quorum member proposes a block. Validation follows in function
+//            Quorum.getQuroumGroup().get(0).proposeBlock();
+//            
+//   
+//        }
+//        
+//        printNodeBlockchain(Nodes.get(0));
+//        printMemPool();
+//        
+        //*** DO NOT USE WITH LARGE # of NODES
+        //printMemPool();
+        //printBlockchainInfo(); //for all nodes, use for testing with small # of nodes
+    } //end main driver
+
+    //Scalability Experiment
+    static void scalability(int numNodes, int tps) throws InterruptedException {
+        int numBlocks = 50; //Number of blocks to create for tests
+        long sleep = 0;
+        
+        //Target tps by changing sleep length
+        switch (tps) {
+            case 10: sleep = 100;
+                break;
+            case 20: sleep = 50;
+                break;
+            case 30: sleep = 33;
+                break;
+            case 40: sleep = 25;
+                break;
+            case 50: sleep = 20;
+                break;     
+        }
+
+        //Create Nodes
+        for (int i = 0; i < numNodes; i++) {
+            Nodes.add(new Node());
+        }
         connectNetwork();
         printNetworkConnections();
+        System.out.println("NumNodes: " + numNodes + " TPS: " + tps);
 
-        //Test Generate 3 Blocks with 3 transactions each, Quorum Validates Blocks
-        for (int i = 0; i < 3; i++) {
-            Quorum = new Quorum();
-            //Nodes.get(0).broadcastTransaction(new Transaction(89)); //bad transaction test
-            //Generate some transactions and broadcast to the mempools
-            for (int j = 0; j < 3; j++) {
-            Thread.sleep(1); //To not overlap timestamps
-            //Nodes.get(0).broadcastTransaction(new Transaction(89)); //bad transaction test
-            Nodes.get(j).broadcastTransaction(Nodes.get(j).createTransaction());
+        
+        //Number of Blocks to create for tests
+        
+        for (int i = 0; i < numBlocks; i++) {
+                    long start = System.currentTimeMillis();
+            Quorum = new Quorum();          //1.Create Quroum
+                    long QCreation = System.currentTimeMillis();
+                    long qDuration = (QCreation - start);  //divide by 1000000 to get milliseconds.
+            System.out.print(qDuration);
+            //broadcast #tps for #seconds
+                    
+                    long broadcastStart = System.currentTimeMillis();
+            for (int j = 0; j < tps; j++) { //2. Target # transactions per block/tps
+                //Thread.sleep(sleep);
+                Nodes.get(j).broadcastTransaction(Nodes.get(j).createTransaction());
             }
-            
-            //Nodes in Network will check if they are in Quorum and validate block
-            for (Node node : Nodes) {
+                    long broadcastEnd = System.currentTimeMillis();
+                    long bDuration = (broadcastEnd - broadcastStart);
+                    System.out.print("," + bDuration);
+                    
+                    long validationStart = System.currentTimeMillis();
+            for (Node node : Nodes) {  //3. Validate Transactions
                 node.validateBlock();
             }
+                    long validationEnd = System.currentTimeMillis();
+                    long vDuration = (validationEnd - validationStart);
+                    System.out.print("," + vDuration);
+                    
+                    
+                    //Propse block and append all Nodes' ledgers
+                    long blockStart = System.currentTimeMillis();
+            Quorum.getQuroumGroup().get(0).proposeBlock();  //4. Broadcast Block and propogate ledgers
+                    long blockEnd = System.currentTimeMillis();
+                    long blockDuration = (blockEnd - blockStart);
+                    System.out.print("," + blockDuration);
+                    
+                    //total time
+                    long endTime = System.currentTimeMillis();
+                    long totalTime = (endTime - start);
+                    System.out.println("," + totalTime);
             
-            //Oldest Quorum member proposes a block. Validation follows in function
-            Quorum.getQuroumGroup().get(0).proposeBlock();
-            
+            //System.out.println();
         }
-        
-        printMemPool();
-        printBlockchainInfo(); //for all nodes, use for testing with small # of nodes
 
-    } //end main driver
+    }
 
     //***** FUNCTIONS *****//
     //Function for printing blockchains of each network node
@@ -133,7 +216,9 @@ public class DataStorage {
         Random rand = new Random();
 
         for (Node node : Nodes) {
-            int count = rand.nextInt(7) + 3;  //Random connection to peers
+            int count = rand.nextInt(10) + 5;  //Random connection to peers
+            //int count = 10;  //Random connection to peers
+            //System.out.println(count);
 
             //While # of peers is less than desired size, get a random peer to connect to
             while (node.getPeers().size() < count) {
@@ -171,13 +256,14 @@ public class DataStorage {
         System.out.println("Peer Connection List");
         System.out.println("CONNECTIONS: Min: " + min + " Max: " + max + " Avg: " + avg);
         System.out.println("--------------------");
-        for (Node n : Nodes) {
-            System.out.print("NodeID: " + n.getNodeID() + " - Peers: ");
-            for (int i = 0; i < n.getPeers().size(); i++) {
-                System.out.print(n.getPeers().get(i).getNodeID() + " ");
-            }
-            System.out.println();
-        }
+
+//        for (Node n : Nodes) {
+//            System.out.print("NodeID: " + n.getNodeID() + " - Peers: ");
+//            for (int i = 0; i < n.getPeers().size(); i++) {
+//                System.out.print(n.getPeers().get(i).getNodeID() + " ");
+//            }
+//            System.out.println();
+//        }
         System.out.println();
     }
 
@@ -193,35 +279,6 @@ public class DataStorage {
     }
 
     //***** EXPERIMENTS *****//
-    static void scalability(int numNodes, int tps) throws InterruptedException{
-        //Create Nodes
-        for (int i = 0; i < numNodes; i++) {
-            Nodes.add(new Node());
-        }
-        connectNetwork();
-        
-        //Begin LOOP - TODO Determine Loop Parameters
-            //TIME - Begin
-            Quorum = new Quorum();
-            //TIME - Quorum Creation (this - begin)
-            //TODO: Inner Loop: 
-                //broadcast #tps for #seconds
-            //End Inner Loop
-            //TIME: TX creation and propogation (this - quorum creation)
-            //Nodes in Network will check if they are in Quorum and validate block
-            for (Node node : Nodes) {
-                node.validateBlock();
-            }
-            //TIME: Quorum Validation (this - Tx propogation/creation)
-            //Node proposes Block (and propogates through network, nodes validate and add Block)
-            Quorum.getQuroumGroup().get(0).proposeBlock();
-            // TIME - (Block Validation and Propogation)(Total = this - begin) 
-            
-        //End Loop
-    }
-    
-    
-    
     //Experiment to test quorum distribution using last block hash as seed (compare to java random)
     static void hashDistributionExp() throws InterruptedException, IOException {
         File file = new File("QuorumCounts.csv");
@@ -296,7 +353,5 @@ public class DataStorage {
         }
         pw.close();
     }
-    
-    
 
 }
